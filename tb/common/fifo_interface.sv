@@ -21,7 +21,7 @@ interface fifo_if #(
     
     // Write port clocking block (Master Agent)
     clocking wr_cb @(posedge wr_clk);
-        default input #1ns output #1ns;
+        default input #0 output #1ns;
         output  wr_en;
         output  wr_data;
         input   full;
@@ -29,7 +29,7 @@ interface fifo_if #(
     
     // Write port monitor clocking block
     clocking wr_mon_cb @(posedge wr_clk);
-        default input #1ns output #1ns;
+        default input #0 output #1ns;
         input   wr_en;
         input   wr_data;
         input   full;
@@ -37,7 +37,7 @@ interface fifo_if #(
     
     // Read port clocking block (Slave Agent)
     clocking rd_cb @(posedge rd_clk);
-        default input #1ns output #1ns;
+        default input #0 output #1ns;
         output  rd_en;
         input   rd_data;
         input   empty;
@@ -45,7 +45,7 @@ interface fifo_if #(
     
     // Read port monitor clocking block
     clocking rd_mon_cb @(posedge rd_clk);
-        default input #1ns output #1ns;
+        default input #0 output #1ns;
         input   rd_en;
         input   rd_data;
         input   empty;

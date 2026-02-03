@@ -11,10 +11,10 @@ class fifo_transaction extends uvm_sequence_item;
     bit            empty;     // FIFO空标志
     
     // Constraints
-    constraint wr_rd_c {
-        // 写和读不能同时为1（在各自的agent中会单独控制）
-        !(wr_en && rd_en);
-    }
+    // constraint wr_rd_c {
+    //     // 写和读不能同时为1（在各自的agent中会单独控制）
+    //     !(wr_en && rd_en);
+    // }
     
     constraint data_c {
         data inside {[0:255]};

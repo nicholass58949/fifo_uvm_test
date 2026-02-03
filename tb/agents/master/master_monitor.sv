@@ -10,11 +10,11 @@ class master_monitor extends uvm_monitor;
     
     function new(string name, uvm_component parent);
         super.new(name, parent);
-        ap = new("ap", this);
     endfunction
     
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
+        ap = new("ap", this);
         if (!uvm_config_db#(virtual fifo_if)::get(this, "", "vif", vif)) begin
             `uvm_fatal("MASTER_MON", "Failed to get virtual interface")
         end

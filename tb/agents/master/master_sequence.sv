@@ -51,7 +51,7 @@ class master_fixed_sequence extends uvm_sequence #(fifo_transaction);
     virtual task body();
         fifo_transaction tx;
         
-        for (int i = 0; i < 16; i++) begin
+        for (int i = 0; i < 64; i++) begin
             tx = fifo_transaction::type_id::create("tx");
             
             start_item(tx);
