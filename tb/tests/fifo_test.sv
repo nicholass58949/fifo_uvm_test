@@ -4,6 +4,9 @@ class fifo_base_test extends uvm_test;
     
     fifo_env env;
     
+    // Watchdog 超时时间 (ns)
+    int unsigned watchdog_timeout = 10000; // 0.1us 无活动则结束
+    
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -14,6 +17,36 @@ class fifo_base_test extends uvm_test;
         // 创建环境
         env = fifo_env::type_id::create("env", this);
     endfunction
+    
+    // Watchdog 任务 - 监控长时间无 transaction
+    virtual task watchdog_task(uvm_phase phase);
+        int last_count;
+        int current_count;
+        int idle_cycles;
+        
+        #1us; // 等待启动
+        
+        last_count = env.scoreboard.total_count;
+        idle_cycles = 0;
+        
+        forever begin
+            #1us;
+            current_count = env.scoreboard.total_count;
+            
+            if (current_count == last_count) begin
+                idle_cycles++;
+                if (idle_cycles * 1000 >= watchdog_timeout) begin
+                    `uvm_info("WATCHDOG", $sformatf("No activity for %0d ns, ending test", watchdog_timeout), UVM_LOW)
+                    phase.drop_objection(this);
+                    break;
+                end
+            end else begin
+                idle_cycles = 0;
+            end
+            
+            last_count = current_count;
+        end
+    endtask
     
     virtual task run_phase(uvm_phase phase);
         master_sequence     mst_seq;
@@ -31,17 +64,18 @@ class fifo_base_test extends uvm_test;
         slv_seq = slave_sequence::type_id::create("slv_seq");
         
         // 配置序列
-        mst_seq.num_transactions = 20;
-        slv_seq.num_transactions = 20;
+        mst_seq.num_transactions = 200;
+        slv_seq.num_transactions = 200;
         
-        // 并行启动主从序列
+        // 并行启动主从序列和 watchdog
         fork
             mst_seq.start(env.mst_agent.sequencer);
             slv_seq.start(env.slv_agent.sequencer);
-        join
+            watchdog_task(phase);
+        join_any
         
         // 等待所有数据处理完成
-        #500ns;
+        #1us;
         
         `uvm_info("TEST", "FIFO test completed", UVM_LOW)
         

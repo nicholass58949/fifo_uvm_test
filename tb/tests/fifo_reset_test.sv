@@ -66,9 +66,9 @@ class fifo_reset_test extends fifo_base_test;
         // Test 1: 写复位
         #100ns;
         `uvm_info("RESET_TEST", "Asserting write reset...", UVM_LOW)
-        force tb_top.wr_rst_n = 1'b0;
+        void'(uvm_hdl_force("tb_top.wr_rst_n", 1'b0));
         #50ns;
-        release tb_top.wr_rst_n;
+        void'(uvm_hdl_release("tb_top.wr_rst_n"));
         `uvm_info("RESET_TEST", "Write reset released", UVM_LOW)
         
         // 等待恢复
@@ -76,9 +76,9 @@ class fifo_reset_test extends fifo_base_test;
         
         // Test 2: 读复位
         `uvm_info("RESET_TEST", "Asserting read reset...", UVM_LOW)
-        force tb_top.rd_rst_n = 1'b0;
+        void'(uvm_hdl_force("tb_top.rd_rst_n", 1'b0));
         #50ns;
-        release tb_top.rd_rst_n;
+        void'(uvm_hdl_release("tb_top.rd_rst_n"));
         `uvm_info("RESET_TEST", "Read reset released", UVM_LOW)
         
         // 等待恢复
@@ -86,11 +86,11 @@ class fifo_reset_test extends fifo_base_test;
         
         // Test 3: 同时复位
         `uvm_info("RESET_TEST", "Asserting both resets...", UVM_LOW)
-        force tb_top.wr_rst_n = 1'b0;
-        force tb_top.rd_rst_n = 1'b0;
+        void'(uvm_hdl_force("tb_top.wr_rst_n", 1'b0));
+        void'(uvm_hdl_force("tb_top.rd_rst_n", 1'b0));
         #50ns;
-        release tb_top.wr_rst_n;
-        release tb_top.rd_rst_n;
+        void'(uvm_hdl_release("tb_top.wr_rst_n"));
+        void'(uvm_hdl_release("tb_top.rd_rst_n"));
         `uvm_info("RESET_TEST", "Both resets released", UVM_LOW)
         
         `uvm_info("RESET_TEST", "Reset control task completed", UVM_MEDIUM)
@@ -155,29 +155,29 @@ class fifo_async_reset_test extends fifo_base_test;
         // Test: 写复位先释放，读复位后释放
         #150ns;
         `uvm_info("ASYNC_RST_TEST", "Asserting async reset (wr first release)", UVM_LOW)
-        force tb_top.wr_rst_n = 1'b0;
-        force tb_top.rd_rst_n = 1'b0;
+        void'(uvm_hdl_force("tb_top.wr_rst_n", 1'b0));
+        void'(uvm_hdl_force("tb_top.rd_rst_n", 1'b0));
         
         #30ns;
-        release tb_top.wr_rst_n;  // 写复位先释放
+        void'(uvm_hdl_release("tb_top.wr_rst_n"));  // 写复位先释放
         `uvm_info("ASYNC_RST_TEST", "Write reset released", UVM_LOW)
         
         #40ns;
-        release tb_top.rd_rst_n;  // 读复位后释放
+        void'(uvm_hdl_release("tb_top.rd_rst_n"));  // 读复位后释放
         `uvm_info("ASYNC_RST_TEST", "Read reset released", UVM_LOW)
         
         // Test: 读复位先释放，写复位后释放
         #200ns;
         `uvm_info("ASYNC_RST_TEST", "Asserting async reset (rd first release)", UVM_LOW)
-        force tb_top.wr_rst_n = 1'b0;
-        force tb_top.rd_rst_n = 1'b0;
+        void'(uvm_hdl_force("tb_top.wr_rst_n", 1'b0));
+        void'(uvm_hdl_force("tb_top.rd_rst_n", 1'b0));
         
         #30ns;
-        release tb_top.rd_rst_n;  // 读复位先释放
+        void'(uvm_hdl_release("tb_top.rd_rst_n"));  // 读复位先释放
         `uvm_info("ASYNC_RST_TEST", "Read reset released", UVM_LOW)
         
         #40ns;
-        release tb_top.wr_rst_n;  // 写复位后释放
+        void'(uvm_hdl_release("tb_top.wr_rst_n"));  // 写复位后释放
         `uvm_info("ASYNC_RST_TEST", "Write reset released", UVM_LOW)
     endtask
     

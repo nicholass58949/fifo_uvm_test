@@ -1,4 +1,6 @@
 // FIFO Interface Definition
+`timescale 1ns/1ps
+
 interface fifo_if #(
     parameter DATA_WIDTH = 8,
     parameter ADDR_WIDTH = 4
@@ -29,7 +31,7 @@ interface fifo_if #(
     
     // Write port monitor clocking block
     clocking wr_mon_cb @(posedge wr_clk);
-        default input #0 output #1ns;
+        default input #(-1ps) output #1ns;
         input   wr_en;
         input   wr_data;
         input   full;
@@ -45,7 +47,7 @@ interface fifo_if #(
     
     // Read port monitor clocking block
     clocking rd_mon_cb @(posedge rd_clk);
-        default input #0 output #1ns;
+        default input #(-1ps) output #1ns;
         input   rd_en;
         input   rd_data;
         input   empty;

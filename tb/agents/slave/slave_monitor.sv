@@ -27,7 +27,8 @@ class slave_monitor extends uvm_monitor;
         wait(vif.rd_rst_n == 1'b1);
         
         forever begin
-            @(vif.rd_mon_cb);
+            @(vif.rd_mon_cb);  // 直接用时钟信号
+            // #1.5ns;  // 等待output skew后采样
             
             // 检测有效的读操作（rd_en为高且非空时读取有效）
             if (vif.rd_mon_cb.rd_en && !vif.rd_mon_cb.empty) begin
@@ -37,7 +38,7 @@ class slave_monitor extends uvm_monitor;
                 tx.wr_en = 1'b0;
                 tx.empty = vif.rd_mon_cb.empty;
                 
-                `uvm_info("SLAVE_MON", $sformatf("Captured read data: %0h", tx.data), UVM_MEDIUM)
+                `uvm_info("SLAVE_MON", $sformatf("Slave Captured FIFO read data is actual3: %0h", tx.data), UVM_HIGH)
                 
                 // 发送到scoreboard (实际数据)
                 ap.write(tx);

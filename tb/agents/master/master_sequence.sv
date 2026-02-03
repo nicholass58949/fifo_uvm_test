@@ -6,7 +6,7 @@ class master_sequence extends uvm_sequence #(fifo_transaction);
     rand int unsigned num_transactions;
     
     constraint num_trans_c {
-        num_transactions inside {[10:50]};
+        num_transactions inside {[500:1000]};
     }
     
     function new(string name = "master_sequence");
@@ -31,8 +31,9 @@ class master_sequence extends uvm_sequence #(fifo_transaction);
             end
             
             finish_item(tx);
-            
-            `uvm_info("MASTER_SEQ", $sformatf("Sent data: %0h", tx.data), UVM_HIGH)
+            `uvm_info("MASTER_FIXED_SEQ", $sformatf("Master Sent FIFO data is expected0: %0h", tx.data), UVM_HIGH)
+
+            // `uvm_info("MASTER_SEQ", $sformatf("Sent data: %0h", tx.data), UVM_HIGH)
         end
         
         `uvm_info("MASTER_SEQ", "Sequence completed", UVM_LOW)
@@ -59,10 +60,11 @@ class master_fixed_sequence extends uvm_sequence #(fifo_transaction);
             tx.data  = i;
             tx.wr_en = 1'b1;
             tx.rd_en = 1'b0;
-            
+            `uvm_info("MASTER_FIXED_SEQ", $sformatf("Master Sent FIFO data is expected0: %0h", tx.data), UVM_HIGH)
+
             finish_item(tx);
             
-            `uvm_info("MASTER_FIXED_SEQ", $sformatf("Sent data: %0h", tx.data), UVM_HIGH)
+            // `uvm_info("MASTER_FIXED_SEQ", $sformatf("Master Sent FIFO data is expected0: %0h", tx.data), UVM_HIGH)
         end
     endtask
     

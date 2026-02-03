@@ -27,7 +27,8 @@ class master_monitor extends uvm_monitor;
         wait(vif.wr_rst_n == 1'b1);
         
         forever begin
-            @(vif.wr_mon_cb);
+            @(vif.wr_mon_cb);  // 直接用时钟信号
+            // #1.5ns;  // 等待output skew后采样
             
             // 检测有效的写操作
             if (vif.wr_mon_cb.wr_en && !vif.wr_mon_cb.full) begin
@@ -37,7 +38,7 @@ class master_monitor extends uvm_monitor;
                 tx.rd_en = 1'b0;
                 tx.full  = vif.wr_mon_cb.full;
                 
-                `uvm_info("MASTER_MON", $sformatf("Captured write data: %0h", tx.data), UVM_MEDIUM)
+                `uvm_info("MASTER_MON", $sformatf("Master Captured FIFO write data is expected2: %0h", tx.data), UVM_HIGH)
                 
                 // 发送到参考模型
                 ap.write(tx);

@@ -28,10 +28,13 @@ class fifo_reference_model extends uvm_component;
         
         if (tx.wr_en) begin
             // 克隆transaction
-            $cast(tx_clone, tx.clone());
+            if (!$cast(tx_clone, tx.clone())) begin
+                `uvm_error("REF_MODEL", "Failed to clone transaction")
+                return;
+            end
             
             tx_count++;
-            `uvm_info("REF_MODEL", $sformatf("Forwarding data[%0d]: %0h", tx_count, tx_clone.data), UVM_MEDIUM)
+            `uvm_info("REF_MODEL", $sformatf("Forwarding expected3 data[%0d]: %0h", tx_count, tx_clone.data), UVM_HIGH)
             
             // 通过exp_port发送期望数据给scoreboard
             exp_port.write(tx_clone);

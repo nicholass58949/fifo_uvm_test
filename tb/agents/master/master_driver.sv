@@ -44,7 +44,7 @@ class master_driver extends uvm_driver #(fifo_transaction);
         // 写数据
         vif.wr_cb.wr_en   <= 1'b1;
         vif.wr_cb.wr_data <= tx.data;
-        `uvm_info("MASTER_DRV", $sformatf("Writing data: %0h", tx.data), UVM_MEDIUM)
+        `uvm_info("MASTER_DRV", $sformatf("Master Writing FIFO data is expected1: %0h", tx.data), UVM_HIGH)
         
         @(vif.wr_cb);
         vif.wr_cb.wr_en <= 1'b0;

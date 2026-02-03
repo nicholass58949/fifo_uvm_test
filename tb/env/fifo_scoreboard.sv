@@ -31,26 +31,23 @@ class fifo_scoreboard extends uvm_scoreboard;
         fifo_transaction act_tx, exp_tx;
         
         forever begin
-            // 从act_fifo获取实际数据
+            // 从 exp_fifo 获取期望数据
+            exp_fifo.get(exp_tx);
+            
+            // 从 act_fifo 获取实际数据
             act_fifo.get(act_tx);
             
             total_count++;
             
-            // 从exp_fifo获取期望数据
-            if (exp_fifo.try_get(exp_tx)) begin
-                // 比较数据
-                if (act_tx.data == exp_tx.data) begin
-                    match_count++;
-                    `uvm_info("SCOREBOARD", $sformatf("MATCH [%0d]: Expected=%0h, Actual=%0h", 
-                              total_count, exp_tx.data, act_tx.data), UVM_MEDIUM)
-                end else begin
-                    mismatch_count++;
-                    `uvm_error("SCOREBOARD", $sformatf("MISMATCH [%0d]: Expected=%0h, Actual=%0h", 
-                               total_count, exp_tx.data, act_tx.data))
-                end
+            // 比较数据
+            if (act_tx.data == exp_tx.data) begin
+                match_count++;
+                `uvm_info("SCOREBOARD", $sformatf("MATCH [%0d]: Expected=%0h, Actual=%0h", 
+                          total_count, exp_tx.data, act_tx.data), UVM_HIGH)
             end else begin
-                `uvm_error("SCOREBOARD", $sformatf("No expected data for actual data: %0h", act_tx.data))
                 mismatch_count++;
+                `uvm_error("SCOREBOARD", $sformatf("MISMATCH [%0d]: Expected=%0h, Actual=%0h", 
+                           total_count, exp_tx.data, act_tx.data))
             end
         end
     endtask
