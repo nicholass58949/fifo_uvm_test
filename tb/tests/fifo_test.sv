@@ -5,7 +5,7 @@ class fifo_base_test extends uvm_test;
     fifo_env env;
     
     // Watchdog 超时时间 (ns)
-    int unsigned watchdog_timeout = 10000; // 0.1us 无活动则结束
+    int unsigned watchdog_timeout = 10000; // 10us 无活动则结束
     
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -16,6 +16,65 @@ class fifo_base_test extends uvm_test;
         
         // 创建环境
         env = fifo_env::type_id::create("env", this);
+
+        // 配置序列重载（工厂机制）
+        configure_sequence_overrides();
+    endfunction
+
+    // 虚函数：配置序列类型重载（由子类或+SEQUENCE_TYPE控制）
+    virtual function void configure_sequence_overrides();
+        string seq_type;
+
+        // 默认序列映射
+        uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_sequence::get_type());
+        uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_sequence::get_type());
+
+        // 运行时切换序列类型：+SEQUENCE_TYPE=fixed/stress
+        if ($value$plusargs("SEQUENCE_TYPE=%s", seq_type)) begin
+            seq_type = seq_type.tolower();
+
+            if (seq_type == "fixed") begin
+                uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_fixed_sequence::get_type());
+                uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_reactive_sequence::get_type());
+            end else if (seq_type == "stress") begin
+                uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_sequence::get_type());
+                uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_reactive_sequence::get_type());
+            end else if (seq_type == "normal") begin
+                uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_sequence::get_type());
+                uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_sequence::get_type());
+            end
+        end
+    endfunction
+
+    // 虚函数：配置序列参数（由子类重载定制）
+    virtual function void configure_sequence_knobs(
+        ref uvm_sequence #(fifo_transaction) mst_seq,
+        ref uvm_sequence #(fifo_transaction) slv_seq
+    );
+        master_base_sequence mst_base;
+        slave_base_sequence slv_base;
+
+        if ($cast(mst_base, mst_seq)) begin
+            mst_base.num_transactions = 20;
+        end
+
+        if ($cast(slv_base, slv_seq)) begin
+            slv_base.num_transactions = 20;
+        end
+    endfunction
+    
+    // 虚函数：配置序列（由子类重载自定义序列）
+    virtual function void configure_sequences(
+        output uvm_sequence #(fifo_transaction) mst_seq,
+        output uvm_sequence #(fifo_transaction) slv_seq
+    );
+        master_base_sequence mst = master_base_sequence::type_id::create("mst_seq");
+        slave_base_sequence slv = slave_base_sequence::type_id::create("slv_seq");
+        
+        mst_seq = mst;
+        slv_seq = slv;
+
+        configure_sequence_knobs(mst_seq, slv_seq);
     endfunction
     
     // Watchdog 任务 - 监控长时间无 transaction
@@ -49,8 +108,7 @@ class fifo_base_test extends uvm_test;
     endtask
     
     virtual task run_phase(uvm_phase phase);
-        master_sequence     mst_seq;
-        slave_sequence      slv_seq;
+        uvm_sequence #(fifo_transaction) mst_seq, slv_seq;
         
         phase.raise_objection(this);
         
@@ -59,13 +117,8 @@ class fifo_base_test extends uvm_test;
         // 等待复位结束
         #100ns;
         
-        // 创建序列
-        mst_seq = master_sequence::type_id::create("mst_seq");
-        slv_seq = slave_sequence::type_id::create("slv_seq");
-        
-        // 配置序列
-        mst_seq.num_transactions = 200;
-        slv_seq.num_transactions = 200;
+        // 调用虚函数获取序列（由子类定制）
+        configure_sequences(mst_seq, slv_seq);
         
         // 并行启动主从序列和 watchdog
         fork
@@ -89,6 +142,16 @@ class fifo_base_test extends uvm_test;
     
 endclass : fifo_base_test
 
+// 普通数据测试 - 使用基类的配置
+class fifo_normal_test extends fifo_base_test;
+    `uvm_component_utils(fifo_normal_test)
+    
+    function new(string name, uvm_component parent);
+        super.new(name, parent);
+    endfunction
+    
+endclass : fifo_normal_test
+
 // 固定数据测试
 class fifo_fixed_test extends fifo_base_test;
     `uvm_component_utils(fifo_fixed_test)
@@ -97,35 +160,22 @@ class fifo_fixed_test extends fifo_base_test;
         super.new(name, parent);
     endfunction
     
-    virtual task run_phase(uvm_phase phase);
-        master_fixed_sequence   mst_seq;
-        slave_reactive_sequence slv_seq;
-        
-        phase.raise_objection(this);
-        
-        `uvm_info("TEST", "Starting FIFO fixed data test", UVM_LOW)
-        
-        // 等待复位结束
-        #100ns;
-        
-        // 创建序列
-        mst_seq = master_fixed_sequence::type_id::create("mst_seq");
-        slv_seq = slave_reactive_sequence::type_id::create("slv_seq");
-        slv_seq.max_reads = 16;
-        
-        // 并行启动主从序列
-        fork
-            mst_seq.start(env.mst_agent.sequencer);
-            slv_seq.start(env.slv_agent.sequencer);
-        join
-        
-        // 等待所有数据处理完成
-        #500ns;
-        
-        `uvm_info("TEST", "FIFO fixed data test completed", UVM_LOW)
-        
-        phase.drop_objection(this);
-    endtask
+    virtual function void configure_sequence_overrides();
+        super.configure_sequence_overrides();
+        uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_fixed_sequence::get_type());
+        uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_reactive_sequence::get_type());
+    endfunction
+
+    virtual function void configure_sequence_knobs(
+        ref uvm_sequence #(fifo_transaction) mst_seq,
+        ref uvm_sequence #(fifo_transaction) slv_seq
+    );
+        slave_reactive_sequence slv;
+
+        if ($cast(slv, slv_seq)) begin
+            slv.max_reads = 16;
+        end
+    endfunction
     
 endclass : fifo_fixed_test
 
@@ -137,37 +187,26 @@ class fifo_stress_test extends fifo_base_test;
         super.new(name, parent);
     endfunction
     
-    virtual task run_phase(uvm_phase phase);
-        master_sequence         mst_seq;
-        slave_reactive_sequence slv_seq;
-        
-        phase.raise_objection(this);
-        
-        `uvm_info("TEST", "Starting FIFO stress test", UVM_LOW)
-        
-        // 等待复位结束
-        #100ns;
-        
-        // 创建序列
-        mst_seq = master_sequence::type_id::create("mst_seq");
-        slv_seq = slave_reactive_sequence::type_id::create("slv_seq");
-        
-        // 大量数据
-        mst_seq.num_transactions = 100;
-        slv_seq.max_reads = 100;
-        
-        // 并行启动主从序列
-        fork
-            mst_seq.start(env.mst_agent.sequencer);
-            slv_seq.start(env.slv_agent.sequencer);
-        join
-        
-        // 等待所有数据处理完成
-        #1000ns;
-        
-        `uvm_info("TEST", "FIFO stress test completed", UVM_LOW)
-        
-        phase.drop_objection(this);
-    endtask
+    virtual function void configure_sequence_overrides();
+        super.configure_sequence_overrides();
+        uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_sequence::get_type());
+        uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_reactive_sequence::get_type());
+    endfunction
+
+    virtual function void configure_sequence_knobs(
+        ref uvm_sequence #(fifo_transaction) mst_seq,
+        ref uvm_sequence #(fifo_transaction) slv_seq
+    );
+        master_base_sequence mst;
+        slave_reactive_sequence slv;
+
+        if ($cast(mst, mst_seq)) begin
+            mst.num_transactions = 100;
+        end
+
+        if ($cast(slv, slv_seq)) begin
+            slv.max_reads = 100;
+        end
+    endfunction
     
 endclass : fifo_stress_test

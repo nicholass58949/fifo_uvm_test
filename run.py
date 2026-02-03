@@ -31,18 +31,19 @@ def build():
         sys.exit(1)
     run_cmd(cmd)
 
-def run(testname='fifo_base_test', gui=False, verbosity='UVM_LOW'):
+def run(testname='fifo_base_test', gui=False, verbosity='UVM_LOW', sequence_type=None):
+    sequence_arg = f' +SEQUENCE_TYPE={sequence_type}' if sequence_type else ''
     if SIMULATOR == 'vcs':
-        cmd = f'./{SIMV} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity} -l run.log'
+        cmd = f'./{SIMV} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity}{sequence_arg} -l run.log'
     elif SIMULATOR == 'questa':
         if gui:
             # GUI模式 - 打开波形窗口
-            cmd = f'vsim -gui -wlf run.wlf -do "log -r /*; run -all" -sv_seed random {TOP_MODULE} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity} -l run.log'
+            cmd = f'vsim -gui -wlf run.wlf -do "log -r /*; run -all" -sv_seed random {TOP_MODULE} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity}{sequence_arg} -l run.log'
         else:
             # 命令行模式 - 也记录所有信号波形
-            cmd = f'vsim -c -do "log -r /*; run -all; quit" -wlf run.wlf -sv_seed random {TOP_MODULE} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity} -l run.log'
+            cmd = f'vsim -c -do "log -r /*; run -all; quit" -wlf run.wlf -sv_seed random {TOP_MODULE} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity}{sequence_arg} -l run.log'
     elif SIMULATOR == 'xcelium':
-        cmd = f'xrun -sv -uvm +incdir+tb -f {FILELIST} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity} -l run.log'
+        cmd = f'xrun -sv -uvm +incdir+tb -f {FILELIST} +UVM_TESTNAME={testname} +UVM_VERBOSITY={verbosity}{sequence_arg} -l run.log'
     else:
         print('不支持的仿真器')
         sys.exit(1)
@@ -71,12 +72,13 @@ def clean():
 
 def main():
     if len(sys.argv) < 2:
-        print('用法: python run.py [build|run|wave|clean] [testname] [--gui] [--verbosity=UVM_LOW]')
+        print('用法: python run.py [build|run|wave|clean] [testname] [--gui] [--verbosity=UVM_LOW] [--sequence=TYPE]')
         print('示例:')
         print('  python run.py build')
         print('  python run.py run fifo_base_test')
         print('  python run.py run fifo_base_test --gui  # GUI模式，打开波形')
         print('  python run.py run fifo_base_test --verbosity=UVM_HIGH')
+        print('  python run.py run fifo_base_test --sequence=fixed')
         print('  python run.py wave                      # 打开已有波形文件 run.wlf')
         print('  python run.py wave my_wave.wlf          # 打开指定波形文件')
         print('  python run.py clean')
@@ -88,10 +90,13 @@ def main():
         testname = sys.argv[2] if len(sys.argv) > 2 else 'fifo_base_test'
         gui = '--gui' in sys.argv
         verbosity = 'UVM_LOW'
+        sequence_type = None
         for arg in sys.argv:
             if arg.startswith('--verbosity='):
                 verbosity = arg.split('=', 1)[1]
-        run(testname, gui, verbosity)
+            if arg.startswith('--sequence='):
+                sequence_type = arg.split('=', 1)[1]
+        run(testname, gui, verbosity, sequence_type)
     elif action == 'wave':
         wlf_file = sys.argv[2] if len(sys.argv) > 2 else 'run.wlf'
         wave(wlf_file)

@@ -1,9 +1,23 @@
-// Slave Sequence - 根据empty信号生成读请求
-class slave_sequence extends uvm_sequence #(fifo_transaction);
-    `uvm_object_utils(slave_sequence)
+// Slave Base Sequence - 基类
+class slave_base_sequence extends uvm_sequence #(fifo_transaction);
+    `uvm_object_utils(slave_base_sequence)
     
-    // 要读取的数据数量
+    // 要读取的数据数量（由测试或子类配置）
     rand int unsigned num_transactions;
+    
+    function new(string name = "slave_base_sequence");
+        super.new(name);
+    endfunction
+    
+    virtual task body();
+        `uvm_fatal("SLAVE_BASE_SEQ", "slave_base_sequence must be overridden by a concrete sequence")
+    endtask
+    
+endclass : slave_base_sequence
+
+// Slave Sequence - 根据empty信号生成读请求
+class slave_sequence extends slave_base_sequence;
+    `uvm_object_utils(slave_sequence)
     
     constraint num_trans_c {
         num_transactions inside {[10:50]};
@@ -39,7 +53,7 @@ class slave_sequence extends uvm_sequence #(fifo_transaction);
 endclass : slave_sequence
 
 // 持续读取序列 - 只要FIFO不空就持续读取
-class slave_reactive_sequence extends uvm_sequence #(fifo_transaction);
+class slave_reactive_sequence extends slave_base_sequence;
     `uvm_object_utils(slave_reactive_sequence)
     
     // 最大读取次数

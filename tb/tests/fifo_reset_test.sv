@@ -9,6 +9,7 @@ class fifo_reset_test extends fifo_base_test;
     
     function new(string name, uvm_component parent);
         super.new(name, parent);
+        watchdog_timeout = 20000;  // 复位测试需要更长的超时时间
     endfunction
     
     virtual function void build_phase(uvm_phase phase);
@@ -20,9 +21,15 @@ class fifo_reset_test extends fifo_base_test;
         end
     endfunction
     
+    // 配置序列重载
+    virtual function void configure_sequence_overrides();
+        super.configure_sequence_overrides();
+        uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_continuous_reset_sequence::get_type());
+        uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_continuous_reset_sequence::get_type());
+    endfunction
+    
     virtual task run_phase(uvm_phase phase);
-        master_continuous_reset_sequence mst_seq;
-        slave_continuous_reset_sequence  slv_seq;
+        uvm_sequence #(fifo_transaction) mst_seq, slv_seq;
         
         phase.raise_objection(this);
         
@@ -33,11 +40,10 @@ class fifo_reset_test extends fifo_base_test;
         // 等待初始复位结束
         #200ns;
         
-        // 创建序列
-        mst_seq = master_continuous_reset_sequence::type_id::create("mst_seq");
-        slv_seq = slave_continuous_reset_sequence::type_id::create("slv_seq");
+        // 获取序列
+        configure_sequences(mst_seq, slv_seq);
         
-        // 并行启动序列和复位控制
+        // 并行启动序列、复位控制和watchdog
         fork
             // 主机序列
             mst_seq.start(env.mst_agent.sequencer);
@@ -47,7 +53,10 @@ class fifo_reset_test extends fifo_base_test;
             
             // 复位控制任务
             reset_control_task();
-        join
+            
+            // watchdog监控
+            watchdog_task(phase);
+        join_any
         
         // 等待稳定
         #500ns;
@@ -107,6 +116,7 @@ class fifo_async_reset_test extends fifo_base_test;
     
     function new(string name, uvm_component parent);
         super.new(name, parent);
+        watchdog_timeout = 20000;  // 异步复位测试需要更长的超时时间
     endfunction
     
     virtual function void build_phase(uvm_phase phase);
@@ -117,9 +127,32 @@ class fifo_async_reset_test extends fifo_base_test;
         end
     endfunction
     
+    // 配置序列重载
+    virtual function void configure_sequence_overrides();
+        super.configure_sequence_overrides();
+        uvm_factory::get().set_type_override_by_type(master_base_sequence::get_type(), master_sequence::get_type());
+        uvm_factory::get().set_type_override_by_type(slave_base_sequence::get_type(), slave_reactive_sequence::get_type());
+    endfunction
+
+    // 配置序列参数
+    virtual function void configure_sequence_knobs(
+        ref uvm_sequence #(fifo_transaction) mst_seq,
+        ref uvm_sequence #(fifo_transaction) slv_seq
+    );
+        master_base_sequence mst;
+        slave_reactive_sequence slv;
+
+        if ($cast(mst, mst_seq)) begin
+            mst.num_transactions = 50;
+        end
+
+        if ($cast(slv, slv_seq)) begin
+            slv.max_reads = 50;
+        end
+    endfunction
+    
     virtual task run_phase(uvm_phase phase);
-        master_sequence mst_seq;
-        slave_reactive_sequence slv_seq;
+        uvm_sequence #(fifo_transaction) mst_seq, slv_seq;
         
         phase.raise_objection(this);
         
@@ -130,18 +163,16 @@ class fifo_async_reset_test extends fifo_base_test;
         // 等待初始复位结束
         #200ns;
         
-        // 创建序列
-        mst_seq = master_sequence::type_id::create("mst_seq");
-        slv_seq = slave_reactive_sequence::type_id::create("slv_seq");
-        mst_seq.num_transactions = 50;
-        slv_seq.max_reads = 50;
+        // 获取序列
+        configure_sequences(mst_seq, slv_seq);
         
         // 并行启动
         fork
             mst_seq.start(env.mst_agent.sequencer);
             slv_seq.start(env.slv_agent.sequencer);
             async_reset_control();
-        join
+            watchdog_task(phase);
+        join_any
         
         #500ns;
         

@@ -1,9 +1,23 @@
-// Master Sequence - 生成写数据序列
-class master_sequence extends uvm_sequence #(fifo_transaction);
-    `uvm_object_utils(master_sequence)
+// Master Base Sequence - 基类
+class master_base_sequence extends uvm_sequence #(fifo_transaction);
+    `uvm_object_utils(master_base_sequence)
     
-    // 要发送的数据数量
+    // 要发送的数据数量（由测试或子类配置）
     rand int unsigned num_transactions;
+    
+    function new(string name = "master_base_sequence");
+        super.new(name);
+    endfunction
+    
+    virtual task body();
+        `uvm_fatal("MASTER_BASE_SEQ", "master_base_sequence must be overridden by a concrete sequence")
+    endtask
+    
+endclass : master_base_sequence
+
+// Master Sequence - 生成写数据序列
+class master_sequence extends master_base_sequence;
+    `uvm_object_utils(master_sequence)
     
     constraint num_trans_c {
         num_transactions inside {[500:1000]};
@@ -42,7 +56,7 @@ class master_sequence extends uvm_sequence #(fifo_transaction);
 endclass : master_sequence
 
 // 固定数据序列 - 用于调试
-class master_fixed_sequence extends uvm_sequence #(fifo_transaction);
+class master_fixed_sequence extends master_base_sequence;
     `uvm_object_utils(master_fixed_sequence)
     
     function new(string name = "master_fixed_sequence");

@@ -3,7 +3,7 @@
 
 // ==================== 写复位序列 ====================
 // 在写操作过程中触发写端口复位
-class master_reset_sequence extends uvm_sequence #(fifo_transaction);
+class master_reset_sequence extends master_base_sequence;
     `uvm_object_utils(master_reset_sequence)
     
     // 复位前写入的数据数量
@@ -53,7 +53,7 @@ endclass : master_reset_sequence
 
 // ==================== 读复位序列 ====================
 // 在读操作过程中触发读端口复位
-class slave_reset_sequence extends uvm_sequence #(fifo_transaction);
+class slave_reset_sequence extends slave_base_sequence;
     `uvm_object_utils(slave_reset_sequence)
     
     // 复位前读取的数据数量
@@ -137,7 +137,7 @@ endclass : reset_virtual_sequence
 
 // ==================== 写复位期间持续写入序列 ====================
 // 测试复位期间的写操作行为
-class master_continuous_reset_sequence extends uvm_sequence #(fifo_transaction);
+class master_continuous_reset_sequence extends master_base_sequence;
     `uvm_object_utils(master_continuous_reset_sequence)
     
     // 总写入次数
@@ -172,7 +172,7 @@ endclass : master_continuous_reset_sequence
 
 // ==================== 读复位期间持续读取序列 ====================
 // 测试复位期间的读操作行为
-class slave_continuous_reset_sequence extends uvm_sequence #(fifo_transaction);
+class slave_continuous_reset_sequence extends slave_base_sequence;
     `uvm_object_utils(slave_continuous_reset_sequence)
     
     // 总读取次数

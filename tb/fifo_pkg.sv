@@ -24,18 +24,20 @@ package fifo_pkg;
     `include "agents/slave/slave_sequence.sv"
     `include "agents/slave/slave_agent.sv"
     
+    `include "agents/reset_sequence.sv"
     // Reference Model and Scoreboard
     `include "env/fifo_reference_model.sv"
     `include "env/fifo_scoreboard.sv"
     
     // Environment
     `include "env/fifo_env.sv"
-    
-    // Reset Sequences
-    `include "tests/reset_sequence.sv"
-    
+
     // Tests
     `include "tests/fifo_test.sv"
+
+    // Reset Sequences
     `include "tests/fifo_reset_test.sv"
+
+
     
 endpackage : fifo_pkg
