@@ -22,7 +22,7 @@ interface fifo_if #(
     logic                   empty;
     
     // Write port clocking block (Master Agent)
-    clocking wr_cb @(posedge wr_clk);
+    clocking wr_drv_cb @(posedge wr_clk);
         default input #0 output #1ns;
         output  wr_en;
         output  wr_data;
@@ -38,7 +38,7 @@ interface fifo_if #(
     endclocking
     
     // Read port clocking block (Slave Agent)
-    clocking rd_cb @(posedge rd_clk);
+    clocking rd_drv_cb @(posedge rd_clk);
         default input #0 output #1ns;
         output  rd_en;
         input   rd_data;
@@ -55,7 +55,7 @@ interface fifo_if #(
     
     // Master (Write) modport
     modport master_drv (
-        clocking wr_cb,
+        clocking wr_drv_cb,
         input wr_clk, wr_rst_n
     );
     
@@ -66,7 +66,7 @@ interface fifo_if #(
     
     // Slave (Read) modport
     modport slave_drv (
-        clocking rd_cb,
+        clocking rd_drv_cb,
         input rd_clk, rd_rst_n
     );
     
